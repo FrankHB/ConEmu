@@ -1004,7 +1004,11 @@ bool CConEmuMain::CheckRequiredFiles()
 		}
 	}
 
+#if defined(__MINGW32__)
+	if (*szRequired)
+#else
 	if (*szRequired || *szRecommended)
+#endif
 	{
 		size_t cchMax = _tcslen(szRequired) + _tcslen(szRecommended) + _tcslen(ms_ConEmuExe) + 255;
 		wchar_t* pszMsg = (wchar_t*)calloc(cchMax, sizeof(*pszMsg));
@@ -1017,12 +1021,14 @@ bool CConEmuMain::CheckRequiredFiles()
 				_wcscat_c(pszMsg, cchMax, szRequired);
 				_wcscat_c(pszMsg, cchMax, L"\n\n");
 			}
+#if !defined(__MINGW32__)
 			if (*szRecommended)
 			{
 				_wcscat_c(pszMsg, cchMax, L"Recommended files not found!\n");
 				_wcscat_c(pszMsg, cchMax, szRecommended);
 				_wcscat_c(pszMsg, cchMax, L"\n\n");
 			}
+#endif
 			_wcscat_c(pszMsg, cchMax, L"ConEmu was started from:\n");
 			_wcscat_c(pszMsg, cchMax, ms_ConEmuExe);
 			_wcscat_c(pszMsg, cchMax, L"\n");
