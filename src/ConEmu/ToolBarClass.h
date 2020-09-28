@@ -98,7 +98,7 @@ private:
 	int mn_DropArrowWidth; // размер поля со стрелкой
 	int mn_ToolWidth, mn_ToolHeight;
 	MArray<PaneInfo*> m_Panels;
-	MSectionSimple m_CS;
+	CRITICAL_SECTION m_CS;
 	bool mb_Locked;
 
 	HPEN mh_LitePen; //, mh_DarkPen;

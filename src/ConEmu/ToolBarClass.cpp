@@ -29,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "header.h"
 #include "ConEmu.h"
 #include "ToolBarClass.h"
-#include "TabBarEx.h"
+#include "TabBar.h"
 #include "Options.h"
 #include "../common/WObjects.h"
 #include "resource.h"
@@ -431,7 +431,7 @@ void CToolBarClass::Paint(const PaintDC& dc, const RECT& rcTB)
 	if (!dc.hDC)
 		return;
 
-	_ASSERTE(gpConEmu->isMainThread());
+//	_ASSERTE(gpConEmu->isMainThread());
 
 	int nWidth = 0;
 	int nMaxWidth = rcTB.right - rcTB.left + 1;
