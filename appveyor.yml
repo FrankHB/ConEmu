@@ -1,5 +1,5 @@
 version: 1.0.{build}
-image: Visual Studio 2017
+image: Visual Studio 2019
 configuration:
 - Release
 - Debug
@@ -20,5 +20,7 @@ build:
   project: src\CE.sln
   parallel: true
   verbosity: minimal
-test: off
+test_script:
+- cmd: >-
+    call "%Configuration%\Tests_%Configuration%_%Platform%.exe"
 deploy: off

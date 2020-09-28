@@ -66,6 +66,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ConEmuPipe.h"
 #include "ConfirmDlg.h"
 #include "CreateProcess.h"
+#include "DontEnable.h"
 #include "DynDialog.h"
 #include "Inside.h"
 #include "LngRc.h"
@@ -1080,6 +1081,14 @@ bool CRealConsole::SetConsoleSize(SHORT sizeX, SHORT sizeY, USHORT sizeBuffer, D
 	return (mp_RBuf->SetConsoleSize(sizeX, sizeY, sizeBuffer, anCmdID) != FALSE);
 }
 
+void CRealConsole::EndSizing()
+{
+	if (m_ConStatus.szText[0])
+	{
+		SetConStatus(nullptr);
+	}
+}
+
 void CRealConsole::SyncGui2Window(const RECT rcVConBack)
 {
 	if (!this)
@@ -1421,7 +1430,8 @@ void CRealConsole::SetInitEnvCommands(CESERVER_REQ_SRVSTARTSTOPRET& pRet)
 		pRet.Palette.bPalletteLoaded = true;
 		pRet.Palette.wAttributes = MAKECONCOLOR(mn_TextColorIdx, mn_BackColorIdx);
 		pRet.Palette.wPopupAttributes = MAKECONCOLOR(mn_PopTextColorIdx, mn_PopBackColorIdx);
-		memmove_s(pRet.Palette.ColorTable, sizeof(pRet.Palette.ColorTable), pPal->Colors, sizeof(pPal->Colors));
+		memmove_s(pRet.Palette.ColorTable, sizeof(pRet.Palette.ColorTable),
+			pPal->Colors.data(), pPal->Colors.size() * sizeof(pPal->Colors[0]));
 	}
 
 	// Task name
@@ -4204,9 +4214,9 @@ bool CRealConsole::StartDebugger(StartDebugType sdt)
 			return false;
 
 		if (gpSetCls->IsMulti() && (Args.aRecreate != cra_CreateWindow))
-			lbRc = (gpConEmu->CreateCon(&Args) != NULL);
+			lbRc = (gpConEmu->CreateCon(Args) != NULL);
 		else
-			lbRc = gpConEmu->CreateWnd(&Args);
+			lbRc = gpConEmu->CreateWnd(Args);
 	}
 	else
 	{
@@ -8240,11 +8250,16 @@ LPCWSTR CRealConsole::GetActiveProcessInfo(CEStr& rsInfo)
 			wchar_t szExitInfo[80];
 			if (m_RootInfo.bRunning)
 				swprintf_c(szExitInfo, L":%u", m_RootInfo.nPID);
-			else
+			else if (static_cast<int32_t>(m_RootInfo.nExitCode) >= -255)
 				swprintf_c(szExitInfo, L":%u %s %i",
 					m_RootInfo.nPID,
 					CLngRc::getRsrc(lng_ExitCode/*"exit code"*/),
-					(int)m_RootInfo.nExitCode);
+					static_cast<int32_t>(m_RootInfo.nExitCode));
+			else
+				swprintf_c(szExitInfo, L":%u %s 0x%08X",
+					m_RootInfo.nPID,
+					CLngRc::getRsrc(lng_ExitCode/*"exit code"*/),
+					m_RootInfo.nExitCode);
 			rsInfo = lstrmerge(ms_RootProcessName, szExitInfo);
 		}
 		else if ((m_StartState < rss_ProcessActive) && ms_RootProcessName[0])
@@ -11464,7 +11479,7 @@ bool CRealConsole::DuplicateRoot(bool bSkipMsg /*= false*/, bool bRunAsAdmin /*=
 			args.eSplit = RConStartArgsEx::eSplitNone;
 
 			// Create (detached) tab ready for attach
-			CVirtualConsole *pVCon = mp_ConEmu->CreateCon(&args);
+			CVirtualConsole *pVCon = mp_ConEmu->CreateCon(args);
 
 			if (pVCon)
 			{
@@ -14605,7 +14620,7 @@ void CRealConsole::StoreGuiChildRect(LPRECT prcNewPos)
 	m_ChildGui.rcLastGuiWnd = rcChild;
 }
 
-void CRealConsole::SetSplitProperties(RConStartArgsEx::SplitType aSplitType, UINT aSplitValue, UINT aSplitPane)
+void CRealConsole::UpdateStartArgs(RConStartArgsEx::SplitType aSplitType, UINT aSplitValue, UINT aSplitPane, bool active)
 {
 	if (!this)
 	{
@@ -14616,6 +14631,13 @@ void CRealConsole::SetSplitProperties(RConStartArgsEx::SplitType aSplitType, UIN
 	m_Args.eSplit = aSplitType;
 	m_Args.nSplitValue = aSplitValue;
 	m_Args.nSplitPane = aSplitPane;
+
+	// Ensure non-active consoles does not have 'Foreground' flag
+	// Ensure than active console does not have 'Background' flag
+	if (active && m_Args.BackgroundTab)
+		m_Args.BackgroundTab = crb_Undefined;
+	if (!active && m_Args.ForegroungTab)
+		m_Args.ForegroungTab = crb_Undefined;
 }
 
 void CRealConsole::SetGuiMode(DWORD anFlags, HWND ahGuiWnd, DWORD anStyle, DWORD anStyleEx, LPCWSTR asAppFileName, DWORD anAppPID, int anBits, RECT arcPrev)

@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <lm.h>
 #include "../common/shlobj.h"
 #include "ConEmu.h"
+#include "DontEnable.h"
 #include "DpiAware.h"
 #include "DynDialog.h"
 #include "LngRc.h"
@@ -450,8 +451,12 @@ INT_PTR CRecreateDlg::OnCtlColorStatic(HWND hDlg, UINT messg, WPARAM wParam, LPA
 
 INT_PTR CRecreateDlg::OnFillCmdList(HWND hDlg, UINT messg, WPARAM wParam, LPARAM lParam)
 {
+	if (!mp_Args)
+	{
+		_ASSERTE(mp_Args);
+		return FALSE;
+	}
 	RConStartArgsEx* pArgs = mp_Args;
-	_ASSERTE(pArgs);
 
 	AddCommandList(pArgs->pszSpecialCmd);
 	AddCommandList(mpsz_SysCmd, pArgs->pszSpecialCmd ? -1 : 0);

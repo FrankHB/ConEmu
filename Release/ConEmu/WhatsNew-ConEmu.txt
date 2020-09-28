@@ -20,6 +20,43 @@ https://conemu.github.io/en/Whats_New.html
 -------------------------------------------
 
 
+2020.7.13
+* gh-2009: Autoload font files from ConEmuDir/ConEmuBaseDir (fix).
+* gh-2130: Use v141_xp toolset to build Release|x86.
+* Fix 'Settings/Debug/Exec' monitoring: files weren't loaded after '@'.
+* Button 'Register ConEmu autorun' didn't work in some cases.
+* Fix console lags and size during ConEmu cmd autoattach initialization.
+* gh-2145: Fix crash (read access violation).
+* l10n: translations were updated
+* gh-468: Fix for environment reload from registry (expand variables in PATH).
+  The problem was with `PATH` variable, it contains substitutes `%SystemRoot%`,
+  but they were not expanded during environment refresh.
+* Code refactoring.
+
+
+2020.6.15
+* gh-2127: Fix broken `-FontDir` command line option.
+* gh-2087: Fix unbalanced CoUninitialize call in ConEmu Panel Views plugin.
+* l10n: updated translations.
+
+
+2020.6.4
+* gh-2009: Don't register ttf files in the working directory.
+* StatusBar: Show negative (lesser than -255) process exit codes as hex. E.g. `example.exe:1234 exit code 0xC0000409`.
+* Hyperlinks: support one slash after `protocol:`. Powershell example: `https:/go.microsoft.com/fwlink/?LinkID=135170`.
+* gh-2095: Fix escaping of postponed GuiMacro scripts.
+* gh-1994: Fix pane orders while saving opened tabs.
+* Prefer to activate during startup the console marked by '>'.
+* Fix opened tabs save: foregroud/background cur_console switches weren't dropped.
+* gh-1844: Status was not cleared after window drag in some cases.
+* gh-2112: Polish translation in progress.
+* Fix wrong tab- and statusbar placement after dpi change.
+* gh-275: Fix cropped scrollbar on high-dpi second monitor.
+* Warnings and UB fixes by FrankHB.
+* Set up CI with Azure Pipelines
+* Update build system to VS2019.
+
+
 2019.10.12
 * gh-1984: Add SetFocus macro which sets keyboard focus to ConEmu ghWnd handle (by stevium).
   Useful for ConEmu Inside scenario, where focus needs to be set programatically.

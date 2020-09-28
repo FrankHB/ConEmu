@@ -1049,12 +1049,7 @@ LRESULT CConEmuChild::OnPaintGaps(HDC hdc)
 	}
 
 	int nColorIdx = RELEASEDEBUGTEST(0/*Black*/,1/*Blue*/);
-	COLORREF* clrPalette = VCon->GetColors();
-	if (!clrPalette)
-	{
-		_ASSERTE(clrPalette!=NULL);
-		return 0;
-	}
+	const auto& clrPalette = VCon->GetColors();
 
 	CRealConsole* pRCon = VCon->RCon();
 	if (pRCon)
@@ -1870,8 +1865,12 @@ void CConEmuChild::UpdateScrollRgn(bool abForce /*= false*/)
 	{
 		RECT rcDc = {}; GetClientRect(mh_WndDC, &rcDc);
 		RECT rcScroll = {}; GetWindowRect(mh_WndBack, &rcScroll);
+		RECT rcScrollClient = {}; GetClientRect(mh_WndBack, &rcScrollClient);
 		MapWindowPoints(NULL, mh_WndDC, (LPPOINT)&rcScroll, 2);
-		rcScroll.left = rcScroll.right - GetSystemMetrics(SM_CXVSCROLL);
+		const int vScrollWidth = RectWidth(rcScroll) - RectWidth(rcScrollClient);
+		const int vSysScrollWidth = GetSystemMetrics(SM_CXVSCROLL);
+		// When monitor's DPI is greater that primary's, SM_CXVSCROLL is smaller than expected
+		rcScroll.left = rcScroll.right - ((vScrollWidth > 0) ? vScrollWidth : vSysScrollWidth);
 		TODO("Horizontal scrolling");
 		hRgn = CreateRectRgn(rcDc.left, rcDc.top, rcDc.right, rcDc.bottom);
 		HRGN hScrlRgn = CreateRectRgn(rcScroll.left, rcScroll.top, rcScroll.right, rcScroll.bottom);
