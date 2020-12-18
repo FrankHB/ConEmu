@@ -1966,16 +1966,20 @@ bool DumpCurrentProcess(ConEmuDumpInfo& dumpInfo)
 	int step = 0;
 	dumpInfo.fullInfo[0] = 0;
 	dumpInfo.dumpFile[0] = 0;
+#ifndef __GNUC__
 	__try
+#endif
 	{
 		ULONG_PTR arguments[1] = { reinterpret_cast<ULONG_PTR>(&dumpInfo) };
 		RaiseException(EXCEPTION_CONEMU_MEMORY_DUMP, EXCEPTION_NONCONTINUABLE_EXCEPTION, 1, arguments);
 		step = 1;
 	}
+#ifndef __GNUC__
 	__except (DumpCurrentProcess(GetExceptionInformation()))
 	{
 		step = 2;
 	}
+#endif
 	std::ignore = step;
 	return step == 2 && dumpInfo.fullInfo[0] != 0 && dumpInfo.result == 0;
 }
