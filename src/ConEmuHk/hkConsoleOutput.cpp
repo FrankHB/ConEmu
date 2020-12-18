@@ -104,6 +104,9 @@ BOOL WINAPI OnSetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode)
 	}
 	#endif
 
+	CEAnsi::WriteAnsiLogFormat("OnSetConsoleMode(0x%04x,x%02X,isVim=%s)",
+		LODWORD(hConsoleHandle), dwMode, gbIsVimProcess ? "true" : "false");
+
 	if (gbIsVimProcess)
 	{
 		if ((dwMode & (ENABLE_WRAP_AT_EOL_OUTPUT|ENABLE_PROCESSED_OUTPUT)) != (ENABLE_WRAP_AT_EOL_OUTPUT|ENABLE_PROCESSED_OUTPUT))
@@ -131,6 +134,16 @@ BOOL WINAPI OnSetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode)
 				CEAnsi::StartXTermMode((dwMode & ENABLE_VIRTUAL_TERMINAL_INPUT) != 0);
 				//if (dwMode & ENABLE_VIRTUAL_TERMINAL_INPUT)
 				//	CEAnsi::ChangeTermMode(tmc_AppCursorKeys, true);
+			}
+		}
+
+		// don't use "else" here! first "if" could be executed.
+		if ((!CEAnsi::gbWasXTermOutput && (dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING))
+			|| (CEAnsi::gbWasXTermOutput && !(dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)))
+		{
+			if (HandleKeeper::IsOutputHandle(hConsoleHandle))
+			{
+				CEAnsi::StartXTermOutput((dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0);
 			}
 		}
 	}

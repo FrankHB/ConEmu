@@ -27,10 +27,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define HIDE_USE_EXCEPTION_INFO
 
+#undef SHOWCREATEBUFFERINFO
 #ifdef _DEBUG
-#define DebugString(x) //OutputDebugString(x)
-#define DebugStringConSize(x) //OutputDebugString(x)
-#define DefTermMsg(s) //MessageBox(NULL, s, L"ConEmuHk", MB_SYSTEMMODAL)
+//	#define SHOWCREATEBUFFERINFO
+	#define DebugString(x) //OutputDebugString(x)
+	#define DebugStringConSize(x) //OutputDebugString(x)
+	#define DefTermMsg(s) //MessageBox(NULL, s, L"ConEmuHk", MB_SYSTEMMODAL)
 #else
 	#define DebugString(x) //OutputDebugString(x)
 	#define DebugStringConSize(x) //OutputDebugString(x)
@@ -689,10 +691,13 @@ BOOL WINAPI OnSetConsoleActiveScreenBuffer(HANDLE hConsoleOutput)
 #endif
 
 		ghCurrentOutBuffer = hConsoleOutput;
-		RequestLocalServerParm Parm = {(DWORD)sizeof(Parm), slsf_SetOutHandle, &ghCurrentOutBuffer};
-		if (RequestLocalServer(&Parm) == 0)
+		RequestLocalServerParm parm = {};
+		parm.StructSize = static_cast<DWORD>(sizeof(parm));
+		parm.Flags = slsf_SetOutHandle;
+		parm.ppConOutBuffer = &ghCurrentOutBuffer;
+		if (RequestLocalServer(&parm) == 0)
 		{
-			gfnSrvLogString = Parm.fSrvLogString;
+			gfnSrvLogString = parm.fSrvLogString;
 		}
 	}
 

@@ -160,14 +160,15 @@ protected:
 
 	DisplayCursorPos gDisplayCursor = {};
 
+	// #condata replace or forward with m_Table calls, e.g. SetAutoCRLF instead of AutoLfNl
 	struct DisplayOpt
 	{
-		BOOL  WrapWasSet;
-		SHORT WrapAt; // Rightmost X coord (1-based)
+		BOOL  WrapWasSet = FALSE;
+		SHORT WrapAt = 0; // Rightmost X coord (1-based)
 		//
-		BOOL  AutoLfNl; // LF/NL (default off): Automatically follow echo of LF, VT or FF with CR.
+		BOOL  AutoLfNl = TRUE; // LF/NL (default on): Automatically follow echo of LF, VT or FF with CR.
 		//
-		BOOL  ShowRawAnsi; // \e[3h display ANSI control characters (TRUE), \e[3l process ANSI (FALSE, normal mode)
+		BOOL  ShowRawAnsi = FALSE; // \e[3h display ANSI control characters (TRUE), \e[3l process ANSI (FALSE, normal mode)
 	}; // gDisplayOpt;
 
 	DisplayOpt gDisplayOpt = {};
@@ -256,6 +257,17 @@ protected:
 	condata::Attribute GetDefaultAttr() const;
 
 	void ChangeTermMode(TermModeCommand mode, DWORD value, DWORD nPID = 0);
+	/// <summary>
+	/// Turn on/off xterm mode for both output and input.
+	/// May be triggered by connector, official Vim builds, ENABLE_VIRTUAL_TERMINAL_INPUT, "ESC ] 9 ; 10 ; 1 ST", etc.
+	/// </summary>
+	/// <param name="bStart">true - start xterm mode, false - stop</param>
 	void StartXTermMode(bool bStart);
+	/// <summary>
+	/// Turn on/off xterm mode only for output (especially for line feeding mode).
+	/// Triggered by ENABLE_VIRTUAL_TERMINAL_PROCESSING.
+	/// </summary>
+	/// <param name="bStart">true - start xterm mode, false - stop</param>
+	void StartXTermOutput(bool bStart);
 	void RefreshXTermModes();
 };

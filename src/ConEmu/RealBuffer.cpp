@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#define ALLOWUSEFARSYNCHRO
 
 #include "Header.h"
-#include <Tlhelp32.h>
+#include <tlhelp32.h>
 
 #include "../common/ConEmuCheck.h"
 #include "../common/EnvVar.h"
@@ -1598,7 +1598,7 @@ bool CRealBuffer::InitBuffers(DWORD anCellCount /*= 0*/, int anWidth /*= 0*/, in
 
 		// Is not critical anymore, it's locked just for flickering minimization
 		_ASSERTE(con.nInGetConsoleData==0);
-		
+
 		HEAPVAL
 
 		swprintf_c(szLog, L"InitBuffers Width=%u Height=%u Cells=%u (done)", nNewWidth, nNewHeight, nCellCount);
@@ -1723,11 +1723,7 @@ SHORT CRealBuffer::GetBufferPosY() const
 
 int CRealBuffer::TextWidth() const
 {
-	if (!this)
-	{
-		_ASSERTE(this!=nullptr);
-		return MIN_CON_WIDTH;
-	}
+	AssertThisRet(MIN_CON_WIDTH);
 
 	if (con.nChange2TextWidth > 0)
 		return con.nChange2TextWidth;
@@ -1738,11 +1734,7 @@ int CRealBuffer::TextWidth() const
 
 int CRealBuffer::GetTextWidth() const
 {
-	if (!this)
-	{
-		_ASSERTE(this!=nullptr);
-		return MIN_CON_WIDTH;
-	}
+	AssertThisRet(MIN_CON_WIDTH);
 
 	_ASSERTE(con.nTextWidth>=MIN_CON_WIDTH && con.nTextWidth<=400);
 	return con.nTextWidth;
@@ -1750,11 +1742,7 @@ int CRealBuffer::GetTextWidth() const
 
 int CRealBuffer::TextHeight() const
 {
-	if (!this)
-	{
-		_ASSERTE(this!=nullptr);
-		return MIN_CON_HEIGHT;
-	}
+	AssertThisRet(MIN_CON_HEIGHT);
 
 	int nRet = 0;
 
@@ -1775,11 +1763,7 @@ int CRealBuffer::TextHeight() const
 
 int CRealBuffer::GetTextHeight() const
 {
-	if (!this)
-	{
-		_ASSERTE(this!=nullptr);
-		return MIN_CON_HEIGHT;
-	}
+	AssertThisRet(MIN_CON_HEIGHT);
 
 	_ASSERTE(con.nTextHeight>=MIN_CON_HEIGHT && con.nTextHeight<=200);
 	return con.nTextHeight;
@@ -2200,21 +2184,16 @@ bool CRealBuffer::LoadDataFromSrv(CRConDataGuard& data, DWORD CharCount, CHAR_IN
 		HEAPVAL;
 
 		CHAR_INFO* lpCur = data->pDataCmp;
-		wchar_t ch;
 
-		// Расфуговка буфера CHAR_INFO на текст и атрибуты
+		// Strip CHAR_INFO into text and attributes
 		for (DWORD n = 0; n < nCharCmp; n++, lpCur++)
 		{
-			TODO("OPTIMIZE: *(lpAttr++) = lpCur->Attributes;");
 			*(lpAttr++) = lpCur->Attributes;
-			TODO("OPTIMIZE: ch = lpCur->Char.UnicodeChar;");
-			ch = lpCur->Char.UnicodeChar;
-			//2009-09-25. Некоторые (старые?) программы умудряются засунуть в консоль символы (ASC<32)
-			//            их нужно заменить на юникодные аналоги
-			*(lpChar++) = ((WORD)ch < 32) ? gszAnalogues[(WORD)ch] : ch;
+			// If some tool write the '\0' to the console we would not be able to copy the console contents to clipboard
+			*(lpChar++) = lpCur->Char.UnicodeChar ? lpCur->Char.UnicodeChar : L' ';
 		}
 
-		// Для использования строковых функций - гарантируем ASCIIZ буфера
+		// ASCIIZ guarantee to use string functions
 		if (lpChar < (data->pConChar + con.nConBufCells))
 		{
 			*lpChar = 0;
@@ -2830,11 +2809,7 @@ bool CRealBuffer::IsBufferHeightTurnedOn(const CONSOLE_SCREEN_BUFFER_INFO& psbi)
 
 void CRealBuffer::OnBufferHeight()
 {
-	if (!this)
-	{
-		_ASSERTE(this);
-		return;
-	}
+	AssertThis();
 
 	// При смене высоты буфера - сбросить последнее мышиное событие
 	ResetLastMousePos();
@@ -6026,6 +6001,19 @@ void CRealBuffer::GetConsoleData(wchar_t* pChar, CharAttr* pAttr, int nWidth, in
 		}
 	} // rbt_Primary
 
+	// Apply control characters substitutes for drawing only
+	{
+		const size_t checkCharsCount = nYMax * nWidth;
+		for (size_t i = 0; i < checkCharsCount; ++i)
+		{
+			const auto charIndex = static_cast<WORD>(pChar[i]);
+			if (charIndex < countof(gszAnalogues))
+			{
+				pChar[i] = gszAnalogues[charIndex];
+			}
+		}
+	}
+
 	// Clean the bottom, if requested height is greater than real one
 	for (nY = nYMax; nY < nHeight; nY++)
 	{
@@ -6770,11 +6758,7 @@ void CRealBuffer::ConsoleCursorPos(COORD *pcr)
 
 void CRealBuffer::ResetBuffer()
 {
-	if (!this)
-	{
-		_ASSERTE(this!=nullptr);
-		return;
-	}
+	AssertThis();
 	con.m_ci.bVisible = TRUE;
 	con.m_ci.dwSize = 15;
 	con.m_sbi.dwCursorPosition = MakeCoord(0,con.m_sbi.srWindow.Top);

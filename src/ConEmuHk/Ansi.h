@@ -139,7 +139,18 @@ protected:
 
 public:
 	static void ChangeTermMode(TermModeCommand mode, DWORD value, DWORD nPID = 0);
+	/// <summary>
+	/// Turn on/off xterm mode for both output and input.
+	/// May be triggered by connector, official Vim builds, ENABLE_VIRTUAL_TERMINAL_INPUT, "ESC ] 9 ; 10 ; 1 ST", etc.
+	/// </summary>
+	/// <param name="bStart">true - start xterm mode, false - stop</param>
 	static void StartXTermMode(bool bStart);
+	/// <summary>
+	/// Turn on/off xterm mode only for output (especially for line feeding mode).
+	/// Triggered by ENABLE_VIRTUAL_TERMINAL_PROCESSING.
+	/// </summary>
+	/// <param name="bStart">true - start xterm mode, false - stop</param>
+	static void StartXTermOutput(bool bStart);
 	static void RefreshXTermModes();
 	static void StorePromptBegin();
 	static void StorePromptReset();
@@ -204,7 +215,7 @@ public:
 
 	void ReSetDisplayParm(HANDLE hConsoleOutput, BOOL bReset, BOOL bApply);
 
-	static void DumpEscape(LPCWSTR buf, size_t cchLen, DumpEscapeCodes iUnknown);
+	static int DumpEscape(LPCWSTR buf, size_t cchLen, DumpEscapeCodes iUnknown);
 
 	BOOL WriteText(OnWriteConsoleW_t _WriteConsoleW, HANDLE hConsoleOutput, LPCWSTR lpBuffer, DWORD nNumberOfCharsToWrite, LPDWORD lpNumberOfCharsWritten, BOOL abCommit = FALSE, EXTREADWRITEFLAGS AddFlags = ewtf_None);
 	BOOL ScrollLine(HANDLE hConsoleOutput, int nDir);
@@ -284,15 +295,15 @@ protected:
 
 	struct DisplayOpt
 	{
-		BOOL  WrapWasSet;
-		SHORT WrapAt; // Rightmost X coord (1-based)
+		BOOL  WrapWasSet = FALSE;
+		SHORT WrapAt = 0; // Rightmost X coord (1-based)
 		//
-		BOOL  AutoLfNl; // LF/NL (default off): Automatically follow echo of LF, VT or FF with CR.
+		BOOL  AutoLfNl = TRUE; // LF/NL (default on): Automatically follow echo of LF, VT or FF with CR.
 		//
-		BOOL  ScrollRegion;
-		SHORT ScrollStart, ScrollEnd; // 0-based absolute line indexes
+		BOOL  ScrollRegion = FALSE;
+		SHORT ScrollStart = 0, ScrollEnd = 0; // 0-based absolute line indexes
 		//
-		BOOL  ShowRawAnsi; // \e[3h display ANSI control characters (TRUE), \e[3l process ANSI (FALSE, normal mode)
+		BOOL  ShowRawAnsi = FALSE; // \e[3h display ANSI control characters (TRUE), \e[3l process ANSI (FALSE, normal mode)
 	}; // gDisplayOpt;
 	// Bad thing again...
 	static DisplayOpt gDisplayOpt;

@@ -47,7 +47,7 @@ enum class StorageType : int
 struct SettingsStorage
 {
 	StorageType Type = StorageType::BASIC;
-	LPCWSTR     File = nullptr;   // NULL or full path to storage file
+	LPCWSTR     File = nullptr;   // nullptr or full path to storage file
 	LPCWSTR     Config = nullptr; // Name of configuration
 	bool        ReadOnly = false; // If xml file is write-prohibited (created in "C:\Program Files"?)
 
@@ -156,7 +156,7 @@ struct SettingsRegistry : public SettingsBase
 		virtual void Delete(const wchar_t *regName) override;
 		virtual void DeleteKey(const wchar_t *regName) override;
 
-		//virtual void Save(const wchar_t *regName, const wchar_t *value) override; // value = _T(""); // сюда мог придти и NULL
+		//virtual void Save(const wchar_t *regName, const wchar_t *value) override; // value = _T(""); // сюда мог придти и nullptr
 		virtual void Save(const wchar_t *regName, LPCBYTE value, const DWORD nType, const DWORD nSize) override;
 
 	public:
@@ -181,7 +181,7 @@ struct SettingsINI : public SettingsBase
 		virtual void Delete(const wchar_t *regName) override;
 		virtual void DeleteKey(const wchar_t *regName) override;
 
-		//virtual void Save(const wchar_t *regName, const wchar_t *value) override; // value = _T(""); // сюда мог придти и NULL
+		//virtual void Save(const wchar_t *regName, const wchar_t *value) override; // value = _T(""); // сюда мог придти и nullptr
 		virtual void Save(const wchar_t *regName, LPCBYTE value, const DWORD nType, const DWORD nSize) override;
 
 	public:
@@ -233,8 +233,8 @@ struct SettingsXML : public SettingsBase
 		void TouchKey(node* apKey) noexcept;
 
 		static LPCWSTR utf2wcs(const char* utf8, CEStr& wc);
-		const char* wcs2utf(const wchar_t* wc, CEStrA& str) const;
-		const char* wcs2utf(const wchar_t* wc);
+		static const char* wcs2utf(const wchar_t* wc, CEStrA& str);
+		const char* wcs2utf(const wchar_t* wc) const;
 
 		node* FindItem(node* apFrom, const wchar_t* asType, const wchar_t* asName, bool abAllowCreate);
 		void DeleteImpl(const wchar_t *regName, const wchar_t *asType) noexcept;
@@ -242,7 +242,7 @@ struct SettingsXML : public SettingsBase
 		bool SetMultiLine(node* apNode, const wchar_t* asValue, long nAllLen);
 		void ClearChildrenTail(node* apNode, node* apFirstClear, const char* nodeType);
 
-		const char* GetAttr(node* apNode, const char* asName);
+		static const char* GetAttr(node* apNode, const char* asName);
 		bool SetAttr(node* apNode, const char* asName, const wchar_t* asValue);
 		bool SetAttr(node* apNode, const char* asName, const char* asValue);
 

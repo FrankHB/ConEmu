@@ -489,6 +489,9 @@
     <ClInclude Include="common\CEStr.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="common\CmdArg.h">
+      <Filter>Common</Filter>
+    </ClInclude>
     <ClInclude Include="common\CmdLine.h">
       <Filter>Common</Filter>
     </ClInclude>
@@ -1181,6 +1184,9 @@
       <Filter>Localizations</Filter>
     </None>
     <None Include="ConEmu\ConEmu.ico">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="ConEmu\ConEmu15.ico">
       <Filter>Resources</Filter>
     </None>
     <None Include="ConEmu\CursorDragCopy.cur">

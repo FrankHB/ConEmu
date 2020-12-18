@@ -28,7 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define HIDE_USE_EXCEPTION_INFO
 #include "Header.h"
-#include <Wininet.h>
+#include <wininet.h>
 #include "../common/shlobj.h"
 #include "Update.h"
 #include "UpdateConst.h"
@@ -965,7 +965,7 @@ bool CConEmuUpdate::LoadVersionInfoFromServer()
 	if (!ms_TempUpdateVerLocation.IsEmpty())
 	{
 		DeleteFile(ms_TempUpdateVerLocation);
-		ms_TempUpdateVerLocation.Empty();
+		ms_TempUpdateVerLocation.Clear();
 	}
 
 	// We need to download information? Or it it is located in the intranet?
@@ -1021,7 +1021,7 @@ bool CConEmuUpdate::LoadVersionInfoFromServer()
 	else
 		ms_TemplFilename = lstrmerge(L"ConEmuPack.", ms_NewVersion, L".7z");
 
-	ms_SourceFull.Empty();
+	ms_SourceFull.Clear();
 
 	if (!GetPrivateProfileString(szSection, szItem, L"", ms_SourceFull.GetBuffer(1024), 1024, pszUpdateVerLocation)
 		|| ms_SourceFull.IsEmpty())
@@ -1315,11 +1315,7 @@ wrap:
 
 CConEmuUpdate::UpdateStep CConEmuUpdate::InUpdate()
 {
-	if (!this)
-	{
-		_ASSERTE(this);
-		return UpdateStep::NotStarted;
-	}
+	AssertThisRet(UpdateStep::NotStarted);
 
 	DWORD nWait = WAIT_OBJECT_0;
 
@@ -1796,7 +1792,7 @@ void CConEmuUpdate::DeleteBadTempFiles()
 	if (!ms_TempUpdateVerLocation.IsEmpty())
 	{
 		DeleteFile(ms_TempUpdateVerLocation);
-		ms_TempUpdateVerLocation.Empty();
+		ms_TempUpdateVerLocation.Clear();
 	}
 	if (mpsz_DeletePackageFile)
 	{

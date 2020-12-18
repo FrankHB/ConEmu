@@ -37,8 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../common/Common.h"
 
-#include <TCHAR.h>
-#include <Tlhelp32.h>
+#include <tchar.h>
 #include <shlwapi.h>
 #include "../common/shlobj.h"
 #include "../common/CmdLine.h"
@@ -248,10 +247,12 @@ bool CShellProc::InitOle32()
 bool CShellProc::GetLinkProperties(LPCWSTR asLnkFile, CEStr& rsExe, CEStr& rsArgs, CEStr& rsWorkDir)
 {
 	bool bRc = false;
-	IPersistFile* pFile = NULL;
-	IShellLinkW*  pShellLink = NULL;
+	IPersistFile* pFile = nullptr;
+	IShellLinkW*  pShellLink = nullptr;
+	// ReSharper disable once CppJoinDeclarationAndAssignment
 	HRESULT hr;
-	DWORD nLnkSize;
+	uint64_t nLnkSize;
+	int cchMaxArgSize = 0;
 	static bool bCoInitialized = false;
 
 	if (!FileExists(asLnkFile, &nLnkSize))
@@ -260,18 +261,18 @@ bool CShellProc::GetLinkProperties(LPCWSTR asLnkFile, CEStr& rsExe, CEStr& rsArg
 	if (!InitOle32())
 		goto wrap;
 
-	hr = CoCreateInstance_f(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void**)&pShellLink);
+	hr = CoCreateInstance_f(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, reinterpret_cast<void**>(&pShellLink));
 	if (FAILED(hr) && !bCoInitialized)
 	{
 		bCoInitialized = true;
-		hr = CoInitializeEx_f(NULL, COINIT_MULTITHREADED);
+		hr = CoInitializeEx_f(nullptr, COINIT_MULTITHREADED);
 		if (SUCCEEDED(hr))
-			hr = CoCreateInstance_f(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void**)&pShellLink);
+			hr = CoCreateInstance_f(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, reinterpret_cast<void**>(&pShellLink));
 	}
 	if (FAILED(hr) || !pShellLink)
 		goto wrap;
 
-	hr = pShellLink->QueryInterface(IID_IPersistFile, (void**)&pFile);
+	hr = pShellLink->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&pFile));
 	if (FAILED(hr) || !pFile)
 		goto wrap;
 
@@ -279,15 +280,16 @@ bool CShellProc::GetLinkProperties(LPCWSTR asLnkFile, CEStr& rsExe, CEStr& rsArg
 	if (FAILED(hr))
 		goto wrap;
 
-	hr = pShellLink->GetPath(rsExe.GetBuffer(MAX_PATH), MAX_PATH, NULL, 0);
+	hr = pShellLink->GetPath(rsExe.GetBuffer(MAX_PATH), MAX_PATH, nullptr, 0);
 	if (FAILED(hr) || rsExe.IsEmpty())
 		goto wrap;
 
-	hr = pShellLink->GetWorkingDirectory(rsWorkDir.GetBuffer(MAX_PATH+1), MAX_PATH+1);
+	hr = pShellLink->GetWorkingDirectory(rsWorkDir.GetBuffer(MAX_PATH + 1), MAX_PATH + 1);
 	if (FAILED(hr))
 		goto wrap;
 
-	hr = pShellLink->GetArguments(rsArgs.GetBuffer(nLnkSize), nLnkSize);
+	cchMaxArgSize = static_cast<int>(std::min<uint64_t>(nLnkSize, std::numeric_limits<int>::max()));
+	hr = pShellLink->GetArguments(rsArgs.GetBuffer(cchMaxArgSize), cchMaxArgSize);
 	if (FAILED(hr))
 		goto wrap;
 
@@ -886,13 +888,10 @@ BOOL CShellProc::ChangeExecuteParms(enum CmdOnCreateType aCmd, bool bConsoleMode
 
 		if (lbNewCmdCheck)
 		{
-			bool lbRootIsCmdExe = FALSE;
-			bool lbAlwaysConfirmExit = FALSE;
-			bool lbAutoDisableConfirmExit = FALSE;
-			bool lbNeedCutStartEndQuot = FALSE;
+			NeedCmdOptions opt{};
 			//DWORD nFileAttrs = (DWORD)-1;
-			ms_ExeTmp.Empty();
-			IsNeedCmd(false, SkipNonPrintable(asParam), ms_ExeTmp, nullptr, &lbNeedCutStartEndQuot, &lbRootIsCmdExe, &lbAlwaysConfirmExit, &lbAutoDisableConfirmExit);
+			ms_ExeTmp.Clear();
+			IsNeedCmd(false, SkipNonPrintable(asParam), ms_ExeTmp, &opt);
 			// это может быть команда ком.процессора!
 			// поэтому, наверное, искать и проверять битность будем только для
 			// файлов с указанным расширением.
@@ -912,7 +911,7 @@ BOOL CShellProc::ChangeExecuteParms(enum CmdOnCreateType aCmd, bool bConsoleMode
 					case csb_SameOS:
 						ImageBits = IsWindows64() ? 64 : 32;
 						break;
-					case csb_x32:
+					case csb_x32:  // NOLINT(bugprone-branch-clone)
 						ImageBits = 32;
 						break;
 					default:
@@ -949,7 +948,7 @@ BOOL CShellProc::ChangeExecuteParms(enum CmdOnCreateType aCmd, bool bConsoleMode
 		{
 			LPCWSTR pszCmdLine = asParam;
 
-			ms_ExeTmp.Empty();
+			ms_ExeTmp.Clear();
 			if ((pszCmdLine = NextArg(pszCmdLine, ms_ExeTmp)))
 			{
 				LPCWSTR pszExt = PointToExt(ms_ExeTmp);
@@ -1254,17 +1253,14 @@ BOOL CShellProc::ChangeExecuteParms(enum CmdOnCreateType aCmd, bool bConsoleMode
 			if (!asFile || !*asFile)
 			{
 				// exe-шника в asFile указано НЕ было, значит он в asParam, нужно его вытащить, и сформировать команду DosBox
-				bool lbRootIsCmdExe = FALSE;
-				bool lbAlwaysConfirmExit = FALSE;
-				bool lbAutoDisableConfirmExit = FALSE;
-				bool lbNeedCutStartEndQuot = FALSE;
-				ms_ExeTmp.Empty();
-				IsNeedCmd(false, SkipNonPrintable(asParam), ms_ExeTmp, NULL, &lbNeedCutStartEndQuot, &lbRootIsCmdExe, &lbAlwaysConfirmExit, &lbAutoDisableConfirmExit);
+				NeedCmdOptions opt{};
+				ms_ExeTmp.Clear();
+				IsNeedCmd(false, SkipNonPrintable(asParam), ms_ExeTmp, &opt);
 
 				if (ms_ExeTmp[0])
 				{
 					LPCWSTR pszQuot = SkipNonPrintable(asParam);
-					if (lbNeedCutStartEndQuot)
+					if (opt.needCutStartEndQuot)
 					{
 						while (*pszQuot == L'"') pszQuot++;
 						pszQuot += lstrlen(ms_ExeTmp);
@@ -1455,7 +1451,7 @@ bool CShellProc::IsAnsiConLoader(LPCWSTR asFile, LPCWSTR asParam)
 		#ifdef _DEBUG
 		bool bAnsiConFound = false;
 		LPCWSTR pszDbg = psz;
-		ms_ExeTmp.Empty();
+		ms_ExeTmp.Clear();
 		if ((pszDbg = NextArg(pszDbg, ms_ExeTmp)))
 		{
 			CharUpperBuff(ms_ExeTmp.ms_Val, lstrlen(ms_ExeTmp));
@@ -1472,7 +1468,7 @@ bool CShellProc::IsAnsiConLoader(LPCWSTR asFile, LPCWSTR asParam)
 		}
 		#endif
 
-		ms_ExeTmp.Empty();
+		ms_ExeTmp.Clear();
 		if (!NextArg(psz, ms_ExeTmp))
 		{
 			// AnsiCon exists in command line?
@@ -1571,7 +1567,7 @@ bool CShellProc::CheckForDefaultTerminal(
 {
 	if (!gbPrepareDefaultTerminal)
 		return true; // nothing to do
-	
+
 	lbGnuDebugger = IsGDB(ms_ExeTmp); // Allow GDB in Lazarus etc.
 
 	if (aCmd == eCreateProcess)
@@ -1828,7 +1824,7 @@ int CShellProc::PrepareExecuteParms(
 		return -1;
 	}
 
-	ms_ExeTmp.Empty();
+	ms_ExeTmp.Clear();
 
 	BOOL bGoChangeParm = FALSE;
 	bool bConsoleMode = false;
@@ -1982,11 +1978,11 @@ int CShellProc::PrepareExecuteParms(
 	// We need the get executable name before some other checks
 	mn_ImageSubsystem = mn_ImageBits = 0;
 	bool bForceCutNewConsole = false;
-	
+
 	// In some cases we need to pre-replace command line,
 	// for example, in cmd prompt: start -new_console:z
 	CEStr lsReplaceFile, lsReplaceParm;
-	ms_ExeTmp.Empty();
+	ms_ExeTmp.Clear();
 	bForceCutNewConsole |= PrepareNewConsoleInFile(aCmd, asFile, asParam, lsReplaceFile, lsReplaceParm, ms_ExeTmp);
 
 	if (ms_ExeTmp.IsEmpty())
@@ -2082,7 +2078,7 @@ int CShellProc::PrepareExecuteParms(
 			}
 			else
 			{
-				// А вот "-cur_console" нужно обрабатывать _здесь_
+				// The "-cur_console" we have to process _here_
 				bCurConsoleArg = true;
 
 				if ((m_Args.ForceDosBox == crb_On) && m_SrvMapping.cbSize && (m_SrvMapping.Flags & CECF_DosBox))
@@ -2255,16 +2251,16 @@ int CShellProc::PrepareExecuteParms(
 
 	#ifdef _DEBUG
 	// Для принудительной вставки ConEmuC.exe - поставить true. Только для отладки!
-	bool lbAlwaysAddConEmuC; lbAlwaysAddConEmuC = false;
+	// Force run through ConEmuC.exe. Only for debugging!
+	bool lbAlwaysAddConEmuC = false;
+	#define isDebugAddConEmuC lbAlwaysAddConEmuC
+	#else
+	#define isDebugAddConEmuC false
 	#endif
 
-	if ((mn_ImageBits == 0) && (mn_ImageSubsystem == 0)
-		#ifdef _DEBUG
-		&& !lbAlwaysAddConEmuC
-		#endif
-		)
+	if ((mn_ImageBits == 0) && (mn_ImageSubsystem == 0) && !isDebugAddConEmuC)
 	{
-		// Это может быть запускаемый документ, например .doc, или .sln файл
+		// This could be the document (ShellExecute), e.g. .doc or .sln file
 		goto wrap;
 	}
 
@@ -2279,32 +2275,57 @@ int CShellProc::PrepareExecuteParms(
 	}
 	else
 	{
-		// хотят GUI прицепить к новой вкладке в ConEmu, или новую консоль из GUI
-		if (lbGuiApp && (NewConsoleFlags || bForceNewConsole))
-			bGoChangeParm = true;
-		// eCreateProcess перехватывать не нужно (сами сделаем InjectHooks после CreateProcess)
-		else if ((mn_ImageBits != 16) && (m_SrvMapping.useInjects == ConEmuUseInjects::Use)
-				&& (NewConsoleFlags // CEF_NEWCON_SWITCH | CEF_NEWCON_PREPEND
-					|| (bLongConsoleOutput &&
-						(((aCmd == eShellExecute)
-							&& (gFarMode.FarVer.dwVerMajor >= 3)
-							&& (anShellFlags && (*anShellFlags & SEE_MASK_NO_CONSOLE)) && (anShowCmd && *anShowCmd))
-						|| ((aCmd == eCreateProcess)
-							// gh-1307: when user runs "script.py" it's executed by Far3 via ShellExecuteEx->CreateProcess(py.exe),
-							// we don't know it's a console process at the moment of ShellExecuteEx
-							&& ((gFarMode.FarVer.dwVerMajor <= 2) || ((gFarMode.FarVer.dwVerMajor >= 3) && (gnInShellExecuteEx)))
-							&& (anCreateFlags && (*anCreateFlags & CREATE_DEFAULT_ERROR_MODE))))
-						)
-					|| (bCurConsoleArg && (m_Args.LongOutputDisable != crb_On))
-					#ifdef _DEBUG
-					|| lbAlwaysAddConEmuC
-					#endif
-					))
-			bGoChangeParm = true;
-		// если это Дос-приложение - то если включен DosBox, вставляем ConEmuC.exe /DOSBOX
-		else if ((mn_ImageBits == 16) && (mn_ImageSubsystem == IMAGE_SUBSYSTEM_DOS_EXECUTABLE)
+		for (bool once = true; once; once = false)
+		{
+			// it's an attach of ChildGui into new ConEmu tab OR new console from GUI
+			if (lbGuiApp && (NewConsoleFlags || bForceNewConsole))
+			{
+				bGoChangeParm = true; break;
+			}
+
+			// Native console applications
+			if ((mn_ImageBits != 16) && (m_SrvMapping.useInjects == ConEmuUseInjects::Use))
+			{
+				if (NewConsoleFlags // CEF_NEWCON_SWITCH | CEF_NEWCON_PREPEND
+					|| (bCurConsoleArg && (m_Args.LongOutputDisable != crb_On)) // "-cur_console", except "-cur_console:o"
+					|| isDebugAddConEmuC // debugging only
+					)
+				{
+					bGoChangeParm = true; break;
+				}
+				if (bLongConsoleOutput) // Far Manager, support "View console output" from Far Plugin
+				{
+					const auto& ver = gFarMode.FarVer;
+					// Certain builds of Far Manager 3.x use ShellExecute
+					if ((aCmd == eShellExecute)
+						&& (ver.dwVerMajor >= 3)
+						&& (anShellFlags && (*anShellFlags & SEE_MASK_NO_CONSOLE)) && (anShowCmd && *anShowCmd))
+					{
+						bGoChangeParm = true; break;
+					}
+					// Others Far versions - CreateProcess for console applications
+					const bool createDefaultErrorMode = (aCmd == eCreateProcess) && (anCreateFlags && (*anCreateFlags & CREATE_DEFAULT_ERROR_MODE));
+					if (createDefaultErrorMode
+						// gh-1307: when user runs "script.py" it's executed by Far3 via ShellExecuteEx->CreateProcess(py.exe),
+						// we don't know it's a console process at the moment of ShellExecuteEx
+						&& ((ver.dwVerMajor <= 2)
+							|| ((gnInShellExecuteEx > 0) && (ver.dwVerMajor >= 3))
+							// gh-2201: Far 3 build 5709 executor changes
+							|| ((gnInShellExecuteEx == 0) && ((ver.dwVerMajor == 3 && ver.dwBuild >= 5709) || (ver.dwVerMajor >= 3)))
+							))
+					{
+						bGoChangeParm = true; break;
+					}
+				}
+			}
+
+			// If this is old DOS application and the DosBox is enabled also insert ConEmuC.exe /DOSBOX
+			if ((mn_ImageBits == 16) && (mn_ImageSubsystem == IMAGE_SUBSYSTEM_DOS_EXECUTABLE)
 				&& m_SrvMapping.cbSize && (m_SrvMapping.Flags & CECF_DosBox))
-			bGoChangeParm = true;
+			{
+				bGoChangeParm = true; break;
+			}
+		}
 	}
 
 	if (bGoChangeParm)
@@ -2503,7 +2524,7 @@ wrap:
 
 bool CShellProc::GetStartingExeName(LPCWSTR asFile, LPCWSTR asParam, CEStr& rsExeTmp)
 {
-	rsExeTmp.Empty();
+	rsExeTmp.Clear();
 
 	if (asFile && *asFile)
 	{
@@ -2544,7 +2565,7 @@ bool CShellProc::GetStartingExeName(LPCWSTR asFile, LPCWSTR asParam, CEStr& rsEx
 
 		// If path to executable contains specials (spaces, etc.) it may be quoted, or not...
 		// So, we can't just call NextArg, logic is more complicated.
-		IsNeedCmd(false, SkipNonPrintable(asParam), rsExeTmp, NULL, NULL, NULL, NULL, NULL);
+		IsNeedCmd(false, SkipNonPrintable(asParam), rsExeTmp);
 	}
 
 	return (!rsExeTmp.IsEmpty());
