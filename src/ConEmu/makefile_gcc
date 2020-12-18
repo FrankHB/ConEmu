@@ -104,6 +104,7 @@ SRCS = \
 		FrameHolder.cpp    \
 		GdiObjects.cpp     \
 		GestureEngine.cpp  \
+		GlobalHotkeys.cpp  \
 		GuiServer.cpp      \
 		helper.cpp         \
 		HooksUnlocker.cpp  \

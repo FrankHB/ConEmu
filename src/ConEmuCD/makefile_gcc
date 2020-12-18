@@ -21,6 +21,8 @@ include ../makefile_gcc_inc
 
 USERLIBS += -lAdvapi32 -lGdi32 -lShell32 -lShlwapi -lOleAut32 -lwinmm
 
+USERCPPFLAGS += -DDLL_CONEMUCD_EXPORTS
+
 SRCS = \
 		../common/CEStr.cpp         \
 		../common/CmdLine.cpp        \
@@ -73,9 +75,12 @@ SRCS = \
 		ConEmuCmd.cpp      \
 		ConEmuSrv.cpp      \
 		ConProcess.cpp     \
+		ConsoleArgs.cpp    \
 		ConsoleMain.cpp    \
+		ConsoleState.cpp   \
 		Debugger.cpp       \
 		DownloaderCall.cpp \
+		DumpOnException.cpp\
 		GuiHooks.cpp       \
 		GuiMacro.cpp       \
 		Infiltrate.cpp     \
@@ -84,10 +89,13 @@ SRCS = \
 		LogFunction.cpp    \
 		MapDump.cpp        \
 		Queue.cpp          \
+		RunMode.cpp        \
 		Shutdown.cpp       \
 		SrvCommands.cpp    \
 		SrvPipes.cpp       \
 		StartEnv.cpp       \
-		UnicodeTest.cpp
+		StdCon.cpp         \
+		UnicodeTest.cpp    \
+		WorkerBase.cpp
 
 include ../makefile_gcc_target
