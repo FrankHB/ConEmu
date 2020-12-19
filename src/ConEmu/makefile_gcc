@@ -21,11 +21,12 @@ RES_NAME2 = ConEmuMinGW
 include ../makefile_gcc_inc
 
 USERLIBS += -lversion -lshlwapi -loleaut32 -lnetapi32 -lwinmm
-USERLIBS += -ladvapi32 -lshell32 -lgdi32 -lcomdlg32 -lole32 -luuid -lcomctl32 mstask.lib
+USERLIBS += -ladvapi32 -lshell32 -lgdi32 -lcomdlg32 -lole32 -luuid -lcomctl32
 
 SRCS = \
 		../common/CEStr.cpp          \
 		../common/CEHandle.cpp       \
+		../common/CmdArg.cpp         \
 		../common/CmdLine.cpp        \
 		../common/Common.cpp         \
 		../common/ConEmuCheck.cpp    \

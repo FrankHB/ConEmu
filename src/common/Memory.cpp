@@ -154,6 +154,10 @@ void xf_set_tag(void* _Memory, LPCSTR lpszFileName, int nLine, bool bAlloc /*= t
 }
 #endif
 
+#if defined(__CYGWIN__) || defined(__MINGW32__)
+extern "C" {
+#endif
+
 void * __cdecl xf_malloc(size_t _Size XF_PLACE_ARGS_DEF)
 {
 	_ASSERTE(ghHeap);
@@ -344,6 +348,10 @@ void __cdecl xf_free(void * _Memory XF_PLACE_ARGS_DEF)
 	xf_dump_chk();
 	#endif
 }
+
+#if defined(__CYGWIN__) || defined(__MINGW32__)
+}
+#endif
 
 
 #ifdef USE_XF_DUMP_CHK
